@@ -96,7 +96,7 @@ quite a neat obfuscation technique!
 
 To break down what the binary does:
 
-* Print `Flag: ` and ask the user for exactly 15 bytes of input (the 16th byte in the `local_38` buffer being a null byte)
+* Print `Flag:` and ask the user for exactly 15 bytes of input (the 16th byte in the `local_38` buffer being a null byte)
 
 * Apply the SIMD fuckery to the user input
 
@@ -108,7 +108,7 @@ To break down what the binary does:
 
 * Otherwise, print `FAILURE`
 
-## Analysing the SIMD transformations
+## Analyzing the SIMD transformations
 
 To solve this challenge, it is crucial to understand the role the SIMD instructions play in this.
 
