@@ -85,10 +85,9 @@ LAB_00101112:
 }
 ```
 
-What immediately hits the eye is the crazy stuff that is going on with all the CONCAT, SUB,
-XOR, bit shifting stuff that is going on.
+What immediately hits the eye is the crazy stuff that is going on with all the CONCAT, SUB, XOR and bit shifting.
 
-To get a more clear picture of what this is supposed to be, let's take a view at the disassembler view:
+To get a more clear picture of what this is supposed to be, let's take a closer look at the disassembler view:
 
 ![SIMD Hell](./simd.png)
 
@@ -103,7 +102,7 @@ To break down what the binary does:
 
 * Compare the result of all this (`local_28`) to the original user input (`local_38`)
 
-* If there's a match, do another comparison of the SIMD result (`local_28`) to the substring `CTF{` (`EXPECTED_PREFIX`) in the first 4 bytes
+* If there's a match, do another comparison of the SIMD result (`local_28`) to the substring `"CTF{"` (`EXPECTED_PREFIX`) in the first 4 bytes
 
 * If there's a match here too, print `SUCCESS`
 
