@@ -317,4 +317,8 @@ And indeed, this seems to work out for us!
 ```sh
 ❯ ./solve.py
 Flag: CTF{S1MDf0rM3!}
+
+❯ ./a.out
+Flag: CTF{S1MDf0rM3!}
+SUCCESS
 ```
