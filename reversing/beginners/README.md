@@ -33,7 +33,8 @@ We learn that we have a 64-bit ELF binary with dynamic linking with debug symbol
 
 So let's give it a shot:
 
-```
+```sh
+❯ chmod +x a.out
 ❯ ./a.out
 Flag: CTF{1234567890}
 FAILURE
