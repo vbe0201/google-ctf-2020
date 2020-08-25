@@ -271,7 +271,7 @@ XOR = [
 ]
 
 EXPECTED_PREFIX = b"CTF{"
-UNK = b"\xFF"
+PLACEHOLDER = -1
 
 
 def simd_op(flag: list, i: int) -> (bool, bytes):
@@ -280,7 +280,7 @@ def simd_op(flag: list, i: int) -> (bool, bytes):
     # rather than the full 32 bits. This means, an additional fixup step will be necessary
     # to produce correct data in the end whenever a byte crosses the 8-bit boundary.
     # The boolean value returned by the function indicates whenever that happens.
-    if flag[i] == -1 and flag[SHUFFLE[i]] != -1:
+    if flag[i] == PLACEHOLDER and flag[SHUFFLE[i]] != PLACEHOLDER:
         sum = flag[SHUFFLE[i]] + ADD32[i]
         return (sum > 0xFF, (sum & 0xFF) ^ XOR[i])
     else:
@@ -308,7 +308,7 @@ def build_flag(flag: list) -> bytes:
 
 # Build the flag starting with the "CTF{" prefix, followed by -1 values as
 # unique placeholders for all empty values (since bytes are always unsigned).
-flag = build_flag([i for i in EXPECTED_PREFIX] + [-1] * (16 - len(EXPECTED_PREFIX)))
+flag = build_flag([i for i in EXPECTED_PREFIX] + [PLACEHOLDER] * (16 - len(EXPECTED_PREFIX)))
 print("Flag:", "".join(map(chr, flag)))
 ```
 
