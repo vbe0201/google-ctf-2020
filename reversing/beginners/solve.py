@@ -20,7 +20,7 @@ EXPECTED_PREFIX = b"CTF{"
 PLACEHOLDER = -1
 
 
-def simd_op(flag: list, i: int) -> (bool, bytes):
+def simd_op(flag: list, i: int) -> (bool, int):
     # This is essentially the pxor(paddd(pshufb(flag))) operation from the original program.
     # See reimpl.py for details, although keep in mind that this operates on single bytes
     # rather than the full 32 bits. This means, an additional fixup step will be necessary
@@ -33,7 +33,7 @@ def simd_op(flag: list, i: int) -> (bool, bytes):
         return (False, flag[i])
 
 
-def build_flag(flag: list) -> bytes:
+def build_flag(flag: list) -> list:
     # We start with 4 known characters, 16 characters are expected.
     # 4 repetitions of the algorithm are sufficient to cover all of them.
     for _ in range(4):
