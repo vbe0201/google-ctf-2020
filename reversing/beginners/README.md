@@ -29,7 +29,7 @@ reveals some important information:
 a.out: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=e3a5d8dc3eee0e960c602b9b2207150c91dc9dff, for GNU/Linux 3.2.0, not stripped
 ```
 
-We learn that we have a 64-bit ELF binary with dynamic linking with debug symbols, so that's rather helpful for reversing.
+We learn that we have a dynamically linked 64-bit ELF binary with debug symbols, so that's rather helpful for reversing.
 
 So let's give it a shot:
 
@@ -165,7 +165,7 @@ XOR = [
 ]
 ```
 
-This instruction works pretty similar to the previously detailed `paddd`, except that it XORs every `n` in XMM0 with the corresponding `n` in the
+This instruction works pretty similar to the previously detailed `paddd`, except that it XORs every `n` in `XMM0` with the corresponding `n` in the
 `XOR` array and stores the result.
 
 ```x86asm
@@ -173,7 +173,7 @@ This instruction works pretty similar to the previously detailed `paddd`, except
                  24 10
 ```
 
-`movaps` just moves the results of all the operations on `XMM0` back into memory so that it can be used for the `strncmp` operations
+`MOVAPS` just moves the results of all the operations on `XMM0` back into memory so that it can be used for the `strncmp` operations
 with the variable `local_28`.
 
 ## Putting it all together
@@ -250,9 +250,9 @@ But this point was actually where the big confusion started to set in about the 
 ## The solution
 
 ...And then, 2 days later, I finally realized that we don't even have to pass the `strncmp` in the binary. The only info we have is that
-the flag must start with the characters `CTF{`. So what if we actually determined all the missing characters by cyclically iterating
+the flag must start with the characters `"CTF{"`. So what if we actually determined all the missing characters by cyclically iterating
 over a buffer starting with `"CTF{"` and replacing the missing bytes with the results of the corresponding `pshufb -> paddd -> pxor`
-results until all the characters are known? Seems like it's worth a shot.
+operations until all the characters are known? Seems like it's worth a shot.
 
 ```py
 SHUFFLE = [
