@@ -26,17 +26,13 @@ Archive:  8bfc40e205d0793678e76f2610fc0a9f58159fcdcbbf3424b0538b0b019bfd50c0ddff
 ```
 
 This reveals a small project setup, so let's look at the individual files:
-
-* [`code.c`](./code.c): Obviously the source code of the application
-
-* [`code.hex`](./code.hex): The "compiled" binary that will be flashed onto the Arduino, or, in our case, emulated in simduino (see below)
-
-* [`Makefile`](./Makefile): A build setup for this AVR project
-
-* [`simavr_diff`](./simavr_diff): As the Makefile suggests, it's a path to the [simavr](https://github.com/buserror/simavr) project
-that will be applied to it before building it
-
-* [`simduino.elf`](./simduino.elf): Seemingly the [simavr](https://github.com/buserror/simavr) for Arduino hardware emulation
+| Filename | Description |
+| :------: | :---- |
+| [`code.c`](./code.c) | Obviously the source code of the application |
+| [`code.hex`](./code.hex) | The "compiled" binary that will be flashed onto the Arduino, or, in our case, emulated in simduino (see below) |
+| [`Makefile`](./Makefile) | A build setup for this AVR project | 
+| [`simavr_diff`](./simavr_diff) | As the Makefile suggests, it's a path to the [simavr](https://github.com/buserror/simavr) project | 
+| [`simduino.elf`](./simduino.elf) | Seemingly the [simavr](https://github.com/buserror/simavr) for Arduino hardware emulation | 
 
 So apparently we have some AVR binary that is being run inside an emulator.
 
@@ -69,7 +65,7 @@ Equipped with all the knowledge from the holy datasheet and the disassembly, we 
 ```
 
 I've noticed this as I've been flying over the `simavr_diff` patch already, apparently Google purposefully underclocks the MCU from its original
-frequency of `16000000` to `1000000`, which means the processor will run 16 (!) times slower than usual. My guess here was that the `F_CPU` macro
+frequency of `16000000` to `1000000`, which means the processor will run **16 (!) times slower than usual**. My guess here was that the `F_CPU` macro
 is utilized by the AVR APIs, hence the re-declaration before the includes.
 
 ```c
