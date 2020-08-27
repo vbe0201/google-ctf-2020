@@ -53,8 +53,7 @@ avr-objdump -j .sec1 -d -m avr5 code.hex > code.dis
 
 So as I started to read the C code, I'd been following along the disassembly to get a picture of the inner workings of some AVR APIs.
 Keep in mind that we're doing a hardware CTF, without any prior knowledge to the challenge, I wasn't expecting something that is obvious on
-the eye without any insight in how the AVR architecture and the provided abstractions from the `avr` library that is being included at the
-top of the code.
+the eye without any insight in how the AVR architecture and the provided abstractions from the `avr` library work.
 
 For the same reason, I also followed along the [`atmega328p` datasheet](https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-7810-Automotive-Microcontrollers-ATmega328P_Datasheet.pdf) since we know from the `avr-gcc` invocation in the Makefile that we're dealing
 with exactly this MCU.
@@ -240,18 +239,18 @@ Let's do some quick mafs with the CPU frequency and the prescale from the `timer
 
 ![Rendered by quicklatex.com](./counter_calc.png)
 
-Now we know that every overflow in the timer means that 67 seconds have ellapsed since the start of it!
+Now we know that every overflow in the timer means that ~65.5 milliseconds have ellapsed since the start of it!
 
 It becomes obvious now that `get_time` also uses `overflow_count` to derive the time that has ellapsed so far. Next,
 there is `timer_on_off` which uses the MMIO to turn the timer on off (who would've guessed it), based on the value of `enable`
 and also `strcpy`s the current status into the `timer_status` variable we discovered earlier.
 
-And finally, `ISR(TIMER1_OVF_vect)` declares another interrupt handler for, you guessed it, timer overflow events. But what it
-actually does is pretty interesting. If the variable `logged_in` is not set, it will increment `overflow_count` by one and compare
-its value against `152`, which evaluates to ~9.6 seconds rounded up to 10 seconds (as the comment also suggests, but we don't trust
-anything we haven't verified ourselves here, of course). If `logged_in` is set on the other hand though, one byte from string buffer
-with our flag will be copied into useless string buffer with the funky message. The timer will be either turned on or off, depending
-on the char that has been copied and `top_secret_index` is incremented by one.
+And finally, `ISR(TIMER1_OVF_vect)` declares another interrupt handler for, timer overflow events. But what it actually does is pretty
+interesting. If the variable `logged_in` is not set, it will increment `overflow_count` by one and compare its value against `152`,
+which evaluates to ~9.6 seconds rounded up to 10 seconds (as the comment also suggests, but we don't trust anything we haven't verified
+ourselves here, of course). If `logged_in` is set on the other hand though, one byte from string buffer with our flag will be copied into
+useless string buffer with the funky message. The timer will be either turned on or off, depending on the char that has been copied and
+`top_secret_index` is incremented by one.
 
 We'll get back to this later.
 
