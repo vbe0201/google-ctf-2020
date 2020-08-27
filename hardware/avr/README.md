@@ -135,7 +135,8 @@ This piece of code initializes, as the function name suggests, the
 [UART](https://de.wikipedia.org/wiki/Universal_Asynchronous_Receiver_Transmitter) bus on hardware with a baud rate of `125000`.
 
 It initializes both TX and RX, but RX with full interrupts. Further, it configures transfers for 8 data bits and even parity,
-although that's irrelevant for our case as we're not going to interface with physical hardware directly.
+although that's irrelevant for our case as we're not going to interface with physical hardware directly. <br>
+***HINT**: TX and RX are like queues. TX saves the data which you send and RX the data which you receive.*
 
 ```c
 static int uart_getchar(FILE* stream) {
@@ -167,7 +168,7 @@ static FILE uart = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW)
 ```
 
 Here, we have implementations of two functions inspired by `getchar` and `putchar`, except that they're
-meant to work over [UART](https://de.wikipedia.org/wiki/Universal_Asynchronous_Receiver_Transmitter) MMIO access.
+meant to work over [UART](https://de.wikipedia.org/wiki/Universal_Asynchronous_Receiver_Transmitter) [MMIO](https://de.wikipedia.org/wiki/Memory_Mapped_I/O) access.
 
 And then below, a virtual file device called `uart` is being defined with the previously implemented functions. Later
 this is used to redirect all I/O to the UART driver interface that was just implemented.
@@ -282,7 +283,7 @@ functions from `stdio.h` header will drive the UART.
 	TIMSK1 = (1<<TOIE1);
 ```
 
-As explained by the datasheet, these MMIO writes are used to initialize the timer. Setting the `TOIE1` bit in the `TIMSK1` register will enable
+As explained by the datasheet, these [MMIO](https://de.wikipedia.org/wiki/Memory_Mapped_I/O) writes are used to initialize the timer. Setting the `TOIE1` bit in the `TIMSK1` register will enable
 Counter 1 overflow interrupts that will be captured by the previously set up interrupt handler.
 
 ```c
@@ -458,14 +459,17 @@ It is roughly equivalent to the following code:
 int strcmp(const char *s1, const char *s2) {
     char c1, c2;
 
-	/* Iterate over the characters in the string as long as they match. */
+    // Iterate over the characters in the string as long as they match.
     while ((c1 = *s1++) == (c2 = *s2++)) {
-		/* If the null terminator is hit, the strings are equal and the function returns 0. */
+
+        // If the null terminator is hit,
+        // the strings are equal and the function returns 0.
         if (c1 == '\0')
             return 0;
     }
 
-	/* If the strings are not equal, return <0 or >0 based on the values of the inequal characters. */
+    // If the strings are not equal,
+    // return <0 or >0 based on the values of the inequal characters.
     return (int)(c1 - c2);
 }
 ```
