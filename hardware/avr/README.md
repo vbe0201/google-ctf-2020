@@ -491,6 +491,8 @@ the entire password as `strcmpwn` will stop once we end up comparing `real_passw
 
 Ultimately, this brings us to the password `"doNOTl4unch_missi1es!"` for user `"agent"`. Nice!
 
+> Random fun fact of the day: Rent a VPS in the same data center as the challenge server to lower network latency. Idiot-proof strategy for brute-force and timing attacks.
+
 Now we have access to the commands of this top secret hackerman machine.
 
 ```
