@@ -40,7 +40,10 @@ that will be applied to it before building it
 
 So apparently we have some AVR binary that is being run inside an emulator.
 
-## Analyzing the code
+The Google CTF site also gives us the host and port of a challenge server where we seemingly find the same code to exploit.
+`avr.2020.ctfcompetition.com 1337`
+
+## Analyzing the Code
 
 After some googling, I learned that `hex` files, which contain lines that look like a nicely lined up hexdump, belong to the
 [Intel HEX](https://en.wikipedia.org/wiki/Intel_HEX) file format.
@@ -245,7 +248,7 @@ It becomes obvious now that `get_time` also uses `overflow_count` to derive the 
 there is `timer_on_off` which uses the MMIO to turn the timer on off (who would've guessed it), based on the value of `enable`
 and also `strcpy`s the current status into the `timer_status` variable we discovered earlier.
 
-And finally, `ISR(TIMER1_OVF_vect)` declares another interrupt handler for, timer overflow events. But what it actually does is pretty
+And finally, `ISR(TIMER1_OVF_vect)` declares another interrupt handler for timer overflow events. But what it actually does is pretty
 interesting. If the variable `logged_in` is not set, it will increment `overflow_count` by one and compare its value against `152`,
 which evaluates to ~9.6 seconds rounded up to 10 seconds (as the comment also suggests, but we don't trust anything we haven't verified
 ourselves here, of course). If `logged_in` is set on the other hand though, one byte from string buffer with our flag will be copied into
@@ -276,7 +279,7 @@ For the `main` function that is actually pretty big, we break it down into small
 ```
 
 First, we initialize the UART bus on hardware and overwrite `stdout` and `stdin` to our previously crafted UART device so that all the I/O
-functions from `stdout.h` header will drive the UART.
+functions from `stdio.h` header will drive the UART.
 
 ```c
 	TCCR1A = 0;
@@ -284,7 +287,7 @@ functions from `stdout.h` header will drive the UART.
 ```
 
 As explained by the datasheet, these MMIO writes are used to initialize the timer. Setting the `TOIE1` bit in the `TIMSK1` register will enable
-Counter 1 overflow interrupts that we previously set up an interrupt handler for.
+Counter 1 overflow interrupts that will be captured by the previously set up interrupt handler.
 
 ```c
 	printf("Initialized.\n");
@@ -416,9 +419,110 @@ copying "top secret data" by prompting us for a second password first. If we pas
 in the Counter 1 overflow interrupt handler until all the bytes have been copied. All the other command
 variants just end up either prompting for other input or just a call to `quit` that halts the CPU.
 
-And prolly here's the next problem. Even if we figure out the "top secret data access code" and data is
-copied, a `break` followed by `quit()` is hit immediately after that, rendering the effort completely
-useless...?!
-
 Drowning in questions and problems here in the late hours of the night, let's break them down one by one
 after I got some sleep. :)
+
+## Passing the Login
+
+Our first problem is the following line of code that restricts the use of the terminal to logged in users:
+
+```c
+if (strcmp(buf, "agent") == 0 && strcmp(buf+256, correctpass) == 0) {
+```
+
+We know the hardcoded username `"agent"` but we have no idea what the password is and we don't have the possibility
+to dump the `correctpass` variable either...but there's something else that caught my attention at this point.
+
+It's the usage of `strcmp` which is vulnerable to timing attacks! And now that we think about it, we've been given
+quite a lot of indices for this previously with the CPU being underclocked to 1MHz and the excessive usage of the
+`get_time` function giving us the program uptime in microseconds after every wrong password we enter.
+
+Seems like this is the way to go!
+
+To understand how this attack is pulled off, we need to take a look at the implementation of `strcmp` in our disassembly.
+
+```asm
+     4b8:    fb 01           movw    r30, r22
+     4ba:    dc 01           movw    r26, r24
+
+     4bc:    8d 91           ld    r24, X+
+     4be:    01 90           ld    r0, Z+
+     4c0:    80 19           sub    r24, r0
+     4c2:    01 10           cpse    r0, r1
+     4c4:    d9 f3           breq    .-10         ;  0x4bc
+
+     4c6:    99 0b           sbc    r25, r25
+     4c8:    08 95           ret
+```
+
+As we can see, the implementation is really small and consistent in timing with a loop that iterates over every character.
+It is roughly equivalent to the following code:
+
+```c
+int strcmp(const char *s1, const char *s2) {
+    char c1, c2;
+
+	/* Iterate over the characters in the string as long as they match. */
+    while ((c1 = *s1++) == (c2 = *s2++)) {
+		/* If the null terminator is hit, the strings are equal and the function returns 0. */
+        if (c1 == '\0')
+            return 0;
+    }
+
+	/* If the strings are not equal, return <0 or >0 based on the values of the inequal characters. */
+    return (int)(c1 - c2);
+}
+```
+
+The issue with the implementation is that it opts out as soon as the characters don't match anymore. So comparing `Test` and `123`
+will take a shorter duration than comparing `car` and `carpet`. And thanks to the uptime leak and the consistent `strcmp` implementation,
+we'll be able to tell very accurately when a character is correct.
+
+Such a bruteforce would normally take `O(printable_characters ^ password_length)`, which is impossible to accomplish in the 10 seconds the
+timer gives us before terminating the program due to a timeout. However, `O(printable_characters * password_length)` is what we have here
+thanks to `strcmp` timing, so this is perfectly reasonable to accomplish!
+
+Let's write some code you can find in [`strcmpwn.py`](./strcmpwn.py).
+
+This code worked out most of the time as it calculates the average mean of how `strcmp` duration changes
+for any additional character in the password in 500 attempts. Based on these results, we can determine the
+correct character as soon as the `strcmp` average duration changes. And repeating this a couple of times lets us brute-force
+the entire password as `strcmpwn` will stop once we end up comparing `real_passwordXXXXXX` to `real_password`.
+
+Ultimately, this brings us to the password `"doNOTl4unch_missi1es!"` for user `"agent"`. Nice!
+
+Now we have access to the commands of this top secret hackerman machine.
+
+```
+Login: agent                
+Password: doNOTl4unch_missi1es!
+Access granted.
+Timer: off.
+Menu:
+1. Store secret data.
+2. Read secret data.
+3. Copy top secret data.
+4. Exit.
+Choice: 
+```
+
+But here's the next issue. Normally, we would invoke command `3` and then `2` to get our flag, but `3` is gated by
+yet another top secret password and...
+
+```c
+				printf("Enter top secret data access code: ");
+				read_data(buf);
+				char pw_bad = 0;
+				for (int i = 0; top_secret_password[i]; i++) {
+					pw_bad |= top_secret_password[i]^buf[i];
+				}
+				if (pw_bad) {
+					printf("Access denied.\n");
+					break;
+				}
+```
+
+is a string comparison algorithm that isn't vulnerable to timing attacks, such as the first `strcmp`. Reading this piece
+of code up and down, there seems no attack surface that lets us recover the second password in order to get the flag.
+
+And this is where the real hardware-related challenge starts.
