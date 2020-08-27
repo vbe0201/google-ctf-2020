@@ -1,4 +1,6 @@
-# Beginners: Dust off the cobwebs, let's reverse!
+# Beginners
+
+> Dust off the cobwebs, let's reverse!
 
 Admittedly, this challenge made us quite struggle, although it's supposed to be the easiest reversing challenge.
 
