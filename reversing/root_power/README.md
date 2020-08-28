@@ -144,11 +144,11 @@ directly. Let's see what is going on there by extracting the contents of the ima
 ❯ sudo lsinitcpio -x /mnt/ctf/boot/initramfs-linux.img
 
 ❯ lt
-  .
-└──   kernel
-   └──   firmware
-      └──   acpi
-         └──   ssdt.aml
+ .
+└── kernel
+   └── firmware
+      └── acpi
+         └── ssdt.aml
 ```
 
 Luckily for us, the modified initramfs image only contains a single file that we have to look at, `ssdt.aml`.
