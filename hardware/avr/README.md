@@ -674,3 +674,7 @@ Flag: CTF{1nv1sibl3_sei_r4c3_c0ndi7i0n}
 This challenge in particular made me, a baremetal developer with lots of project in the embedded domain, a lot more conscious
 about this kind of truly invisible hardware flaw and how fatal race conditions are even possible without any threading
 or multiprocessing code.
+
+## Conclusion
+
+![IoT Security](./iotsec.png)
