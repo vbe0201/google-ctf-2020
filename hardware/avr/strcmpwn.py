@@ -47,10 +47,14 @@ def login(username: str, password: str, attempts: int = 500) -> float:
         "Welcome to secret military database. Press ENTER to continue.", payload
     )
 
-    # Receive the responses from the server and determine the average strcomp time.
+    # Receive the responses from the server and determine the average strcomp time deltas.
     uptimes = [t for t in parse_uptime(connection.recvall().decode())]
     deltas = [b - a for a, b in zip(uptimes, uptimes[1:])]
 
+    # Close the connection to the server.
+    connection.close()
+
+    # Compute the average mean in time that strcmp took for the combination of letters.
     strcmp_mean = mean(deltas)
     print(f"strcmp mean: {strcmp_mean}")
     return strcmp_mean
