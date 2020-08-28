@@ -667,7 +667,7 @@ with Pool(None) as pool:
 It took quite some time, but it was worth it.
 
 ```sh
-❯ python solve.py
+❯ ./solve.py
 Flag: CTF{1nv1sibl3_sei_r4c3_c0ndi7i0n}
 ```
 
