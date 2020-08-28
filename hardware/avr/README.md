@@ -135,7 +135,8 @@ This piece of code initializes, as the function name suggests, the
 [UART](https://de.wikipedia.org/wiki/Universal_Asynchronous_Receiver_Transmitter) bus on hardware with a baud rate of `125000`.
 
 It initializes both TX and RX, but RX with full interrupts. Further, it configures transfers for 8 data bits and even parity,
-although that's irrelevant for our case as we're not going to interface with physical hardware directly. <br>
+although that's irrelevant for our case as we're not going to interface with physical hardware directly.
+
 ***HINT**: TX and RX are like queues. TX saves the data which you send and RX the data which you receive.*
 
 ```c
