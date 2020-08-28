@@ -32,7 +32,7 @@ This reveals a small project setup, so let's look at the individual files:
 | [`code.hex`](./code.hex) | The "compiled" binary that will be flashed onto the Arduino, or, in our case, emulated in simduino (see below) |
 | [`Makefile`](./Makefile) | A build setup for this AVR project | 
 | [`simavr_diff`](./simavr_diff) | As the Makefile suggests, it's a path to the [simavr](https://github.com/buserror/simavr) project | 
-| [`simduino.elf`](./simduino.elf) | Seemingly the [simavr](https://github.com/buserror/simavr) for Arduino hardware emulation | 
+| [`simduino.elf`](./simduino.elf) | Seemingly the [simavr](https://github.com/buserror/simavr) binary for Arduino hardware emulation | 
 
 So apparently we have some AVR binary that is being run inside an emulator.
 
@@ -351,7 +351,7 @@ Let's look at the documentation of the `I` bit in the `SREG` register:
 
 What we learn from here is that in AVR, a status bit `I` exists, which globally controls the interrupt delivery.
 With the `cli()` function or the `CLI` instruction in assembly, we can prevent interrupt delivery whereas `sei()` or
-the `SEI` instruction turn on active interrupt delivery.
+the `SEI` instruction turns on active interrupt delivery.
 
 ```c
     while (1) {
@@ -489,7 +489,7 @@ the entire password as `strcmpwn` will stop once we end up comparing `real_passw
 
 Ultimately, this brings us to the password `"doNOTl4unch_missi1es!"` for user `"agent"`. Nice!
 
-> Random fun fact of the day: Rent a VPS in the same data center as the challenge server to lower network latency. Idiot-proof strategy for brute-force and timing attacks.
+> Random fun fact of the day: Rent a VPS in the same data center as the challenge server to lower the network latency. Idiot-proof strategy for brute-force and timing attacks.
 
 Now we have access to the commands of this top secret hackerman machine.
 
@@ -576,10 +576,10 @@ The assembly-level state of things explains the scenario a bit better.
      39c:	80 93 8c 06 	sts	0x068C, r24	;  0x80068c
 ```
 
-So first, interrupt delivery is being disabled through `cli`. All interrupts that happen after this (such as a timer overflow) would be stored for later.
+So first, interrupt delivery is being disabled through `cli`. All interrupts that happen after this (such as a timer overflows) would be stored for later.
 Then, the value of `0` is being loaded into `r24` as the argument to the `timer_on_off` function at address `0x17e`, which is being called after that.
-Then we have the `sei`, which re-enables the interrupt delivery - AFTER the next instruction - which loads `1` into `r24`. However, it will take the instruction
-after that too, which stores the contents of `r24` to location `0x80068C`, our `logged_in` variable, that is.
+Then we have the `sei`, which re-enables the interrupt delivery - AFTER the next instruction - which loads `1` into `r24`. However, it would take the instruction
+after that too, which stores the contents of `r24` to location `0x80068C`, our `logged_in` variable, that is, for the counter to to copy our data.
 
 To conclude, `sei` would have to execute the next **2** instructions to set `logged_in` to `1`. And if a counter overflow happened to be in the interrupt queue,
 it would execute the following code piece of code.
