@@ -185,7 +185,7 @@ Disassembly completed
 ASL Output:    ssdt.dsl - 4182 bytes
 ```
 
-And it worked! Let's take a look at the resulting output file `ssdt.dsl` which indeed turned into parseable and understandable code.
+And it worked! A look at the resulting output file `ssdt.dsl` reveals parseable and understandable code.
 
 ```asl
 /*
